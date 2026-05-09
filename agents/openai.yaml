@@ -1,4 +1,4 @@
-﻿interface:
+interface:
   display_name: "游戏 QA 智能流水线"
-  short_description: "图文表深度审计、数据驱动测试与 Excel 导出的游戏 QA 技能。"
-  default_prompt: "Use $game-qa-pipeline-data-vision-expert to analyze a game requirement with text, visuals, and table design, ask multimodal questions first, generate [R]/[T]-linked test assets, and export an .xlsx workbook."
+  short_description: "图文表审计、项目记忆、后端源码与配置表联合追踪、Excel 导出的游戏 QA 技能。"
+  default_prompt: "Use $game-qa-pipeline-data-vision-expert to analyze game requirements, trace backend implementation under C:\\NuoYaIdle\\Server\\ and config tables under C:\\NuoYaIdle\\Tools\\表格配置及转换\\excel\\ when white-box closure is needed, generate [R]/[T]-linked test assets, and export a validated .xlsx workbook."
