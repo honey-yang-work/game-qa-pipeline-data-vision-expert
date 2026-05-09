@@ -21,6 +21,7 @@
 
 - 图文表三位一体审计
 - 项目术语和历史坑点扫描
+- 项目专属知识库建立、更新与命中使用
 - 能力边界库
 - 规则承载域识别
 - 全文证据合并门禁
@@ -40,6 +41,8 @@
 - 代码缺陷 / 配置缺陷 / 代码配置不一致 / 配置证据不足定性
 - Phase 5 只读审计优先
 - 源码业务释义注释落地
+- 修复后 Diff 复审模式
+- 默认工程根或配置根不可用时的降级询问策略
 - 守方证明与攻方破坏
 - 《白盒审视结论单》
 - 收尾规则增量与避坑点学习
@@ -50,6 +53,7 @@
 
 检查文档和脚本在以下内容上保持一致：
 
+- `SKILL.md`、`usage-guide.md`、`output-contracts.md`、脚本四者的口径
 - 工作簿工作表名称
 - 测试用例列
 - RTM 列
@@ -80,10 +84,16 @@ python -m py_compile "C:\Users\yangfeng\.codex\skills\game-qa-pipeline-data-visi
 python -m py_compile "C:\Users\yangfeng\.codex\skills\game-qa-pipeline-data-vision-expert\scripts\validate_game_qa_payload.py"
 ```
 
-同时使用样例载荷运行：
+同时做一遍最小载荷冒烟验证：
 
-- `validate_game_qa_payload.py`
-- `build_game_qa_data_vision_workbook.py`
+- 如果仓库内已提供样例载荷，直接用样例载荷运行：
+  - `validate_game_qa_payload.py`
+  - `build_game_qa_data_vision_workbook.py`
+- 如果仓库内没有样例载荷，按 `references/output-contracts.md` 中的 JSON 结构临时构造一份最小合法载荷，至少验证：
+  - `test_cases`
+  - `rtm`
+  - 可选 `code_traceability`
+  - 输出工作表名为 `测试用例库` / `需求跟踪矩阵`，并在提供 `code_traceability` 时生成 `代码追踪矩阵`
 
 失败处理：修复失败脚本或契约后，才能声明完成。
 
@@ -99,6 +109,9 @@ python -m py_compile "C:\Users\yangfeng\.codex\skills\game-qa-pipeline-data-visi
 | 用户粘贴源码 | 立即触发 Phase 5 |
 | 本地文件夹或压缩包 | 安全分流，跳过无关文件，先输出拓扑 |
 | 完整后端工程 | 未给其他根目录时默认使用 `C:\NuoYaIdle\Server\` |
+| 默认工程根不可读 | 只询问新的后端工程路径，不要求用户贴代码 |
+| 默认配置根不可读 | 标记配置证据不足，只询问新的配置表目录 |
+| 用户要求基于上一轮修复重新复审 | 触发 Phase 5 的 Diff 复审模式 |
 | Phase 5 Step 2 | 只新增 `[新增业务释义注释]`，不得新增可执行插桩 |
 
 失败处理：强化强制门禁或快速参考规则。
