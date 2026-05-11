@@ -36,6 +36,7 @@
 - 策划变更影响矩阵
 - `R` / `T` / `TC` ID 生命周期维护
 - 新增 / 修改 / 废弃 / 回归用例差分更新
+- Phase 4R 后 Phase 5 最新基线优先
 - Windows 中文资产编码保护
 - 默认后端工程 `C:\NuoYaIdle\Server\` 需求驱动源码定位
 - 默认配置表目录 `C:\NuoYaIdle\Tools\表格配置及转换\excel\` 字段和值读取
@@ -118,6 +119,7 @@ python -m py_compile "C:\Users\yangfeng\.codex\skills\game-qa-pipeline-data-visi
 | 新版策划只做文案澄清 | 标为 L0，只更新文档或 RTM 备注 |
 | 新版策划影响资源、状态机、概率或跨模块链路 | 标为 L3 或 L4，扩大影响范围并拉起回归包 |
 | 新版策划删除旧需求 | RTM 和用例标记废弃，不得静默删除旧 ID |
+| 同一轮同时收到新版策划文档和源码更新 | 先完成 Phase 4R，再进入 Phase 5 |
 | 用户直接要求测试用例 | 仍先执行必要反问与门禁，再进入设计 |
 | 用户粘贴源码 | 立即触发 Phase 5 |
 | 本地文件夹或压缩包 | 安全分流，跳过无关文件，先输出拓扑 |
@@ -126,6 +128,12 @@ python -m py_compile "C:\Users\yangfeng\.codex\skills\game-qa-pipeline-data-visi
 | 默认配置根不可读 | 标记配置证据不足，只询问新的配置表目录 |
 | 用户要求基于上一轮修复重新复审 | 触发 Phase 5 的 Diff 复审模式 |
 | Phase 5 Step 2 | 只新增 `[新增业务释义注释]`，不得新增可执行插桩 |
+
+白盒专项追加检查：
+
+- 若存在 Phase 4R 结果，Phase 5 是否明确引用最新基线版本，而不是继续沿用旧版策划对应的 `RTM`、用例范围或结构化载荷
+- 若 Phase 4R 标记 L0 且未影响 `R`/`T`，Phase 5 是否显式说明复用旧白盒范围的依据
+- 若 Phase 4R 标记 L1-L4 或存在废弃 / 变更 `R`/`T`，Phase 5 是否先隔离失效旧范围，再按最新基线重建审计范围
 
 失败处理：强化强制门禁或快速参考规则。
 
