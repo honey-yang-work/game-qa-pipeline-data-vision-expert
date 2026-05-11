@@ -23,7 +23,6 @@ description: 当需要审计由文字需求、UI 图片、配置表、后端工�
 | Excel、RTM、XMind、结构化载荷、文件命名 | `references/output-contracts.md` |
 | 任务完成前、多遍自检、能力保真检查 | `references/self-check-gates.md` |
 | 用户要求建立或更新项目专属知识库 | `references/project-memory-template.md` |
-| 用户想了解本技能功能结构、使用方式或交付路径 | `references/usage-guide.md` |
 
 ## 强制门禁
 

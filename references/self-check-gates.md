@@ -53,7 +53,7 @@
 
 检查文档和脚本在以下内容上保持一致：
 
-- `SKILL.md`、`usage-guide.md`、`output-contracts.md`、脚本四者的口径
+- `SKILL.md`、`output-contracts.md`、脚本三者的口径
 - 工作簿工作表名称
 - 测试用例列
 - RTM 列
