@@ -1,6 +1,6 @@
 ---
 name: game-qa-pipeline-data-vision-expert
-description: 当需要审计由文字需求、UI 图片、配置表、后端工程源码追踪和源码输入共同组成的游戏需求时使用；特别适用于模块化拆解、项目记忆风险扫描、需求追踪、高覆盖测试设计、XLSX 交付、基于 C:\NuoYaIdle\Server\ 与 C:\NuoYaIdle\Tools\表格配置及转换\excel\ 的白盒审计，以及修复后基于历史白盒发现进行 diff 复审并重新输出《白盒审视结论单》的场景。
+description: 当需要审计由文字需求、UI 图片、配置表、后端工程源码追踪和源码输入共同组成的游戏需求时使用；特别适用于模块化拆解、项目记忆风险扫描、需求追踪、高覆盖测试设计、XLSX 交付、P4 后策划文档更新的增量复审、基于 C:\NuoYaIdle\Server\ 与 C:\NuoYaIdle\Tools\表格配置及转换\excel\ 的白盒审计，以及修复后基于历史白盒发现进行 diff 复审并重新输出《白盒审视结论单》的场景。
 ---
 
 # 游戏 QA 智能架构师（SDET 大师版 - V8.1）
@@ -18,6 +18,7 @@ description: 当需要审计由文字需求、UI 图片、配置表、后端工�
 | 触发场景 | 必读 reference |
 |---|---|
 | 任意图文表需求分析 | `references/workflow-phases.md` |
+| Phase 4 已交付后，用户重新提供新版策划文档、补充文档或变更说明，并要求不是全量重跑 | `references/workflow-phases.md` 和 `references/output-contracts.md` |
 | 需求分析后需要白盒闭环、默认后端工程追踪、默认配置表读取、源码片段/路径/压缩包补充输入 | `references/whitebox-audit-phase5.md`，并先加载 `references/project-memory-template.md` 建立项目技术认知 |
 | 项目术语、历史坑点、能力边界、风险探针 | `references/asset-library.md` |
 | Excel、RTM、XMind、结构化载荷、文件命名 | `references/output-contracts.md` |
@@ -29,6 +30,8 @@ description: 当需要审计由文字需求、UI 图片、配置表、后端工�
 - Phase 0-4 为标准流水线；Phase 5 为需求分析完成后的后端工程 + 配置表联合白盒闭环，默认源码根为 `C:\NuoYaIdle\Server\`，默认配置根为 `C:\NuoYaIdle\Tools\表格配置及转换\excel\`，用户提供的源码片段、路径、文件夹或压缩包仅作为补充输入。
 - Phase 0 输出模块划分建议和风险探针包后，必须等待用户回复“确认”。
 - Phase 1 输出《深度反问清单》后，必须等待用户回复“理解一致”。
+- Phase 4 已交付后若用户提供新版策划文档，默认进入 Phase 4R 增量复审；不得直接全量重跑 P0-P4，也不得直接覆盖旧 RTM、用例或结构化载荷。
+- Phase 4R 必须先输出《策划变更影响矩阵》并等待用户确认影响范围；确认后只对变更点和受影响链路局部执行 P0-P4。
 - Phase 5 的 Step 0/1/2/3/4 每一步都必须独立输出、独立停顿、等待用户确认后才能进入下一步。
 - 文字、UI 图、配置表、用户确认、源码之间一旦冲突，必须显式提出，不得静默吞掉。
 - 任何确定性缺陷输出前，必须执行全文反证检索和规则承载域识别。
@@ -58,6 +61,10 @@ description: 当需要审计由文字需求、UI 图片、配置表、后端工�
 
 执行数据健康检查，生成结构化载荷、Excel、RTM 和 XMind Markdown。优先使用 `scripts/validate_game_qa_payload.py` 和 `scripts/build_game_qa_data_vision_workbook.py`。详细契约见 `references/output-contracts.md`。
 
+### Phase 4R: 策划文档增量复审与资产差分更新
+
+在 Phase 4 已交付后，若用户重新提供新版策划文档、补充文档或变更说明，必须先基于上一轮 P4 基线资产识别新增、修改、删除、澄清和冲突项，输出《策划变更影响矩阵》，等待用户确认后再局部重跑受影响的 P0-P4。不得因存在新版文档而默认全量重跑，也不得静默覆盖旧编号、旧用例或旧 RTM。详细规则见 `references/workflow-phases.md`，交付契约见 `references/output-contracts.md`。
+
 ### Phase 5: 后端工程 + 配置表联合逆向审计与动态渗透策略
 
 在 Phase 0-4 完成需求理解、RTM 建模和用例设计后，若需要白盒闭环审计，默认进入 `C:\NuoYaIdle\Server\` 后端工程和 `C:\NuoYaIdle\Tools\表格配置及转换\excel\` 配置表目录，联合定位本期需求承载代码、配置字段和值；用户提供的源码片段、本地路径、文件夹或压缩包作为补充输入。Step 0-4 必须逐步确认。详细规则见 `references/whitebox-audit-phase5.md`。
@@ -75,6 +82,7 @@ description: 当需要审计由文字需求、UI 图片、配置表、后端工�
 - 红蓝对抗测试设计
 - Python / Airtest 自动化伪代码
 - Excel / XMind / JSON 结构化交付
+- Phase 4R 策划文档增量复审与资产差分更新
 - Windows 中文资产编码保护
 - 默认后端工程 `C:\NuoYaIdle\Server\` 需求驱动源码定位
 - 默认配置表目录 `C:\NuoYaIdle\Tools\表格配置及转换\excel\` 字段和值读取

@@ -29,6 +29,18 @@ RTM_COLUMNS = [
     "备注",
 ]
 
+CHANGE_IMPACT_COLUMNS = [
+    "变更ID",
+    "变更类型",
+    "原R/T",
+    "新R/T",
+    "影响模块",
+    "影响用例",
+    "建议重跑阶段",
+    "风险等级",
+    "处理动作",
+]
+
 CODE_TRACE_COLUMNS = [
     "需求ID",
     "表字段ID",
@@ -70,6 +82,18 @@ RTM_ALIASES = {
     "备注": ["备注"],
 }
 
+CHANGE_IMPACT_ALIASES = {
+    "变更ID": ["变更ID", "变更编号"],
+    "变更类型": ["变更类型", "变更分类"],
+    "原R/T": ["原R/T", "旧R/T", "旧编号", "来源编号"],
+    "新R/T": ["新R/T", "新增R/T", "替代编号"],
+    "影响模块": ["影响模块", "模块"],
+    "影响用例": ["影响用例", "测试用例ID"],
+    "建议重跑阶段": ["建议重跑阶段", "重跑阶段", "建议阶段"],
+    "风险等级": ["风险等级", "风险级别"],
+    "处理动作": ["处理动作", "动作", "处理建议"],
+}
+
 CODE_TRACE_ALIASES = {
     "需求ID": ["需求ID", "需求编号", "R"],
     "表字段ID": ["表字段ID", "字段ID", "T"],
@@ -93,6 +117,8 @@ PRIORITY_PATTERN = re.compile(r"^P[0-3](?:\(.+\))?$")
 TRACE_PATTERN = re.compile(r"\b[RT]\d+\b")
 REQUIREMENT_PATTERN = re.compile(r"\bR\d+\b")
 TABLE_FIELD_PATTERN = re.compile(r"\bT\d+\b")
+CHANGE_TYPE_VALUES = {"新增", "修改", "删除", "澄清", "冲突", "拆分", "合并"}
+CHANGE_RISK_VALUES = {"L0", "L1", "L2", "L3", "L4"}
 CODE_TRACE_CONFIDENCE_VALUES = {"高", "中高", "低"}
 
 
@@ -143,6 +169,7 @@ def validate_payload(payload: dict[str, Any], system_name: str = "") -> list[str
     errors: list[str] = []
     raw_cases = payload.get("test_cases")
     raw_rtm = payload.get("rtm")
+    raw_change_impact = payload.get("change_impact", [])
     raw_code_trace = payload.get("code_traceability", [])
 
     if not isinstance(raw_cases, list):
@@ -153,6 +180,11 @@ def validate_payload(payload: dict[str, Any], system_name: str = "") -> list[str
         raw_rtm = []
     if raw_code_trace is None:
         raw_code_trace = []
+    if raw_change_impact is None:
+        raw_change_impact = []
+    if not isinstance(raw_change_impact, list):
+        errors.append("change_impact must be a list when provided")
+        raw_change_impact = []
     if not isinstance(raw_code_trace, list):
         errors.append("code_traceability must be a list when provided")
         raw_code_trace = []
@@ -168,6 +200,12 @@ def validate_payload(payload: dict[str, Any], system_name: str = "") -> list[str
     except ValueError as error:
         errors.append(f"rtm {error}")
         rtm_rows = []
+
+    try:
+        change_impact_rows = normalize_records(raw_change_impact, CHANGE_IMPACT_COLUMNS, CHANGE_IMPACT_ALIASES)
+    except ValueError as error:
+        errors.append(f"change_impact {error}")
+        change_impact_rows = []
 
     try:
         code_trace_rows = normalize_records(raw_code_trace, CODE_TRACE_COLUMNS, CODE_TRACE_ALIASES)
@@ -216,7 +254,7 @@ def validate_payload(payload: dict[str, Any], system_name: str = "") -> list[str
         rtm_trace_ids.update(trace_ids)
 
         linked_ids = [item.strip() for item in re.split(r"[,，;；\s]+", row["测试用例ID"]) if item.strip()]
-        if row["覆盖状态"] in {"Covered", "Partially Covered"} and not linked_ids:
+        if row["覆盖状态"] in {"Covered", "Partially Covered", "已覆盖", "部分覆盖"} and not linked_ids:
             errors.append(f"{row_label}.测试用例ID is required when 覆盖状态 is {row['覆盖状态']}")
         for linked_id in linked_ids:
             if linked_id not in case_ids:
@@ -225,6 +263,36 @@ def validate_payload(payload: dict[str, Any], system_name: str = "") -> list[str
     missing_in_rtm = sorted(case_trace_ids - rtm_trace_ids)
     if missing_in_rtm:
         errors.append("trace IDs used by test cases but missing in RTM: " + ", ".join(missing_in_rtm))
+
+    seen_change_ids: set[str] = set()
+    for index, row in enumerate(change_impact_rows, start=1):
+        row_label = f"change_impact[{index}]"
+        change_id = row["变更ID"]
+        if not change_id:
+            errors.append(f"{row_label}.变更ID is required")
+        elif change_id in seen_change_ids:
+            errors.append(f"{row_label}.变更ID duplicate: {change_id}")
+        else:
+            seen_change_ids.add(change_id)
+
+        if row["变更类型"] not in CHANGE_TYPE_VALUES:
+            errors.append(f"{row_label}.变更类型 must be one of 新增 / 修改 / 删除 / 澄清 / 冲突 / 拆分 / 合并")
+        if row["风险等级"] not in CHANGE_RISK_VALUES:
+            errors.append(f"{row_label}.风险等级 must be one of L0 / L1 / L2 / L3 / L4")
+        if not row["建议重跑阶段"]:
+            errors.append(f"{row_label}.建议重跑阶段 is required")
+        if not row["处理动作"]:
+            errors.append(f"{row_label}.处理动作 is required")
+
+        if row["变更类型"] in {"修改", "删除", "拆分", "合并"} and not extract_trace_ids(row["原R/T"]):
+            errors.append(f"{row_label}.原R/T must include an R/T ID for {row['变更类型']} changes")
+        if row["变更类型"] == "新增" and not extract_trace_ids(row["新R/T"]):
+            errors.append(f"{row_label}.新R/T must include an R/T ID for 新增 changes")
+
+        impacted_ids = [item.strip() for item in re.split(r"[,，;；\s]+", row["影响用例"]) if item.strip()]
+        for impacted_id in impacted_ids:
+            if impacted_id not in case_ids:
+                errors.append(f"{row_label}.影响用例 references unknown case: {impacted_id}")
 
     for index, row in enumerate(code_trace_rows, start=1):
         row_label = f"code_traceability[{index}]"

@@ -39,6 +39,18 @@ RTM_COLUMNS = [
     "备注",
 ]
 
+CHANGE_IMPACT_COLUMNS = [
+    "变更ID",
+    "变更类型",
+    "原R/T",
+    "新R/T",
+    "影响模块",
+    "影响用例",
+    "建议重跑阶段",
+    "风险等级",
+    "处理动作",
+]
+
 CODE_TRACE_COLUMNS = [
     "需求ID",
     "表字段ID",
@@ -78,6 +90,18 @@ RTM_ALIASES = {
     "测试用例ID": ["测试用例ID"],
     "覆盖状态": ["覆盖状态"],
     "备注": ["备注"],
+}
+
+CHANGE_IMPACT_ALIASES = {
+    "变更ID": ["变更ID", "变更编号"],
+    "变更类型": ["变更类型", "变更分类"],
+    "原R/T": ["原R/T", "旧R/T", "旧编号", "来源编号"],
+    "新R/T": ["新R/T", "新增R/T", "替代编号"],
+    "影响模块": ["影响模块", "模块"],
+    "影响用例": ["影响用例", "测试用例ID"],
+    "建议重跑阶段": ["建议重跑阶段", "重跑阶段", "建议阶段"],
+    "风险等级": ["风险等级", "风险级别"],
+    "处理动作": ["处理动作", "动作", "处理建议"],
 }
 
 CODE_TRACE_ALIASES = {
@@ -189,7 +213,7 @@ def autosize_and_style(writer: pd.ExcelWriter) -> None:
             worksheet.column_dimensions[get_column_letter(column_index)].width = min(max(max_length + 2, 12), 60)
 
 
-def build_dataset(payload: dict) -> tuple[list[dict], list[dict], list[dict]]:
+def build_dataset(payload: dict) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
     test_cases = normalize_records(
         ensure_list(payload.get("test_cases"), "test_cases"),
         CASE_COLUMNS,
@@ -200,12 +224,17 @@ def build_dataset(payload: dict) -> tuple[list[dict], list[dict], list[dict]]:
         RTM_COLUMNS,
         RTM_ALIASES,
     )
+    change_impact_rows = normalize_records(
+        ensure_list(payload.get("change_impact"), "change_impact"),
+        CHANGE_IMPACT_COLUMNS,
+        CHANGE_IMPACT_ALIASES,
+    )
     code_trace_rows = normalize_records(
         ensure_list(payload.get("code_traceability"), "code_traceability"),
         CODE_TRACE_COLUMNS,
         CODE_TRACE_ALIASES,
     )
-    return test_cases, rtm_rows, code_trace_rows
+    return test_cases, rtm_rows, change_impact_rows, code_trace_rows
 
 
 def build_workbook(payload: dict, output_path: Path, system_name: str = "", skip_validate: bool = False) -> Path:
@@ -215,12 +244,14 @@ def build_workbook(payload: dict, output_path: Path, system_name: str = "", skip
             formatted_errors = "\n".join(f"- {error}" for error in errors)
             raise ValueError(f"Payload validation failed:\n{formatted_errors}")
 
-    test_cases, rtm_rows, code_trace_rows = build_dataset(payload)
+    test_cases, rtm_rows, change_impact_rows, code_trace_rows = build_dataset(payload)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
         write_sheet(writer, "测试用例库", test_cases, CASE_COLUMNS)
         write_sheet(writer, "需求跟踪矩阵", rtm_rows, RTM_COLUMNS)
+        if change_impact_rows:
+            write_sheet(writer, "变更影响矩阵", change_impact_rows, CHANGE_IMPACT_COLUMNS)
         if code_trace_rows:
             write_sheet(writer, "代码追踪矩阵", code_trace_rows, CODE_TRACE_COLUMNS)
         autosize_and_style(writer)
